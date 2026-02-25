@@ -1,6 +1,6 @@
 [project]
 name = "irispy-client-revised"
-version = "0.0.1"
+version = "0.0.2"
 description = "A modified version of the Iris bot client in Python"
 authors = [{ name = "ponyobot", email = "admin@ponyobot.kr" }]
 requires-python = ">=3.9"

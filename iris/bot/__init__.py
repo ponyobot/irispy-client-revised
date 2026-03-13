@@ -37,6 +37,9 @@ class Bot:
 
     def __process_chat(self, chat: ChatContext):
         self.emitter.emit("chat", [chat])
+        if chat.is_lite:
+            self.emitter.emit("message", [chat])
+            return
 
         origin = chat.message.v.get("origin")
         if origin == "MSG":
@@ -55,28 +58,40 @@ class Bot:
         except Exception:
             pass
 
+        is_lite = req.is_lite
+
         room = Room(
             id=int(req.raw["chat_id"]),
             name=req.room,
             api=self.api,
+            is_lite=is_lite,
+            is_group_chat=req.raw.get("is_group_chat", False)
         )
+        
+        user_id = req.raw["user_id"]
+        if not is_lite:
+            user_id = int(user_id)
+
         sender = User(
-            id=int(req.raw["user_id"]),
+            id=user_id,
             chat_id=room.id,
             api=self.api,
             name=req.sender,
             bot_id=self.bot_id,
+            is_lite=is_lite,
+            profile_image=req.raw.get("profile_image")
         )
         message = Message(
             id=int(req.raw["id"]),
-            type=int(req.raw["type"]),
+            type=int(req.raw["type"]) if req.raw.get("type") is not None else None,
             msg=req.raw["message"],
             attachment=req.raw["attachment"],
             v=v,
+            is_lite=is_lite
         )
 
         chat = ChatContext(
-            room=room, sender=sender, message=message, raw=req.raw, api=self.api, _bot_id=self.bot_id
+            room=room, sender=sender, message=message, raw=req.raw, api=self.api, _bot_id=self.bot_id, is_lite=is_lite
         )
         self.__process_chat(chat)
 
@@ -85,7 +100,11 @@ class Bot:
             try:
                 with connect(self.iris_ws_endpoint, close_timeout=0) as ws:
                     print("웹소켓에 연결되었습니다")
-                    self.bot_id = self.api.get_info()["bot_id"]
+                    try:
+                        self.bot_id = self.api.get_info()["bot_id"]
+                    except Exception as e:
+                        self.bot_id = None
+                    
                     while True:
                         recv = ws.recv()
                         try:
@@ -118,4 +137,3 @@ class Bot:
             return wrapper
 
         return decorator
-

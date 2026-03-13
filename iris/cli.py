@@ -460,7 +460,6 @@ def handle_melon_kakaolink(args):
             print(f"Error deleting melon_kakaolink_config: {e}", file=sys.stderr)
 # 추가끝 1
 
-
 # --- Main Parser Setup ---
 
 def main():
@@ -480,7 +479,7 @@ def main():
     parser_kakaolink.add_argument("app_key", help="Your Kakaolink application key.")
     parser_kakaolink.add_argument("origin", help="Your Kakaolink service origin URL (e.g., https://example.com).")
     parser_kakaolink.set_defaults(func=handle_kakaolink)
-    
+
     # 추가됨 2
     # --- iris melon_kakaolink ---
     parser_melon = subparsers.add_parser("melon_kakaolink", help="Enable or disable Melon KakaoLink.")

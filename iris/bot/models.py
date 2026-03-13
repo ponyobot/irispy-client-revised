@@ -6,19 +6,24 @@ from functools import cached_property
 from PIL import Image
 from io import BytesIO, BufferedIOBase
 import requests
+import base64
 
 @dataclass
 class Message:
-    id: int
-    type: int
+    id: t.Union[int, str]
+    type: t.Optional[int]
     msg: str
-    attachment: str
-    v: dict
+    attachment: t.Optional[str]
+    v: t.Optional[dict]
+    is_lite: bool = False
 
     def __post_init__(self):
         self.command, *param = self.msg.split(" ", 1)
         self.has_param = len(param) > 0
         self.param = param[0] if self.has_param else None
+        if self.is_lite:
+            self.image = None
+            return
         try:
             self.attachment = json.loads(self.attachment)
         except Exception:
@@ -36,13 +41,20 @@ class Message:
         return f"Message(id={self.id}, type={self.type}, msg={self.msg})"
 
 class Room:
-    def __init__(self, id: int, name: str, api: IrisAPI):
+    def __init__(self, id: t.Union[int, str], name: str, api: IrisAPI, is_lite: bool = False, is_group_chat: bool = False):
         self.id = id
         self.name = name
         self._api = api
+        self.is_lite = is_lite
+        self._is_group_chat = is_group_chat
+
+    def is_group_chat(self) -> bool:
+        return self._is_group_chat
 
     @cached_property
     def type(self) -> t.Optional[str]:
+        if self.is_lite:
+            return None
         try:
             results = self._api.query(
                 'select type from chat_rooms where id = ?',
@@ -62,16 +74,19 @@ class Room:
 
 
 class User:
-    def __init__(self, id: int, chat_id: int, api: IrisAPI, name: str = None, bot_id: int = None):
+    def __init__(self, id: t.Union[int, str], chat_id: t.Union[int, str], api: IrisAPI, name: str = None, bot_id: int = None, is_lite: bool = False, profile_image: str = None):
         self.id = id
         self._chat_id = chat_id
         self._api = api
         self._name = name
         self._bot_id = bot_id
-        self.avatar = Avatar(id, chat_id, api)
+        self.is_lite = is_lite
+        self.avatar = Avatar(id, chat_id, api, is_lite=is_lite, profile_image=profile_image)
     
     @cached_property
     def name(self) -> t.Optional[str]:
+        if self.is_lite:
+            return self._name
         try:
             if not self._name:
                 if self.id == self._bot_id:
@@ -96,6 +111,8 @@ class User:
     
     @cached_property
     def type(self) -> t.Optional[str]:
+        if self.is_lite:
+            return None
         try:
             if self.id == self._bot_id:
                 query = "SELECT T2.link_member_type FROM chat_rooms AS T1 INNER JOIN open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
@@ -125,13 +142,17 @@ class User:
         return f"User(name={self.name})"
 
 class Avatar:
-    def __init__(self, id: int, chat_id: int, api: IrisAPI):
+    def __init__(self, id: t.Union[int, str], chat_id: t.Union[int, str], api: IrisAPI, is_lite: bool = False, profile_image: str = None):
         self._id = id
         self._api = api
         self._chat_id = chat_id
+        self.is_lite = is_lite
+        self._profile_image = profile_image
 
     @cached_property
     def url(self) -> t.Optional[str]:
+        if self.is_lite:
+            return None
         try:
             if self._id < 10000000000:
                 query = "SELECT T2.o_profile_image_url FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
@@ -148,6 +169,16 @@ class Avatar:
 
     @cached_property
     def img(self) -> t.Optional[bytes]:
+        if self.is_lite:
+            if self._profile_image:
+                try:
+                    img_data = base64.b64decode(self._profile_image)
+                    img = Image.open(BytesIO(img_data))
+                    return img
+                except Exception:
+                    return None
+            return None
+
         avatar_url = self.url
 
         if not avatar_url:
@@ -224,6 +255,7 @@ class ChatContext:
     raw: dict
     api: IrisAPI
     _bot_id: int = None
+    is_lite: bool = False
 
     def __post_init__(self):
         pass
@@ -247,7 +279,7 @@ class ChatContext:
             room_id = self.room.id
         
         self.api.reply_media(room_id, files, thread_id=thread_id)
-
+    
     # 추가됨 1
     def reply_audio(
         self,
@@ -282,8 +314,10 @@ class ChatContext:
 
         self.api.reply_file(room_id, files, thread_id=thread_id)
     # 추가끝 1
-    
+
     def get_source(self):
+        if self.is_lite:
+            return None
         source_record = self.__get_reply_chat(self.message)
         if source_record:
             source_chat = self.__make_chat(self, source_record)
@@ -292,6 +326,8 @@ class ChatContext:
             return None
 
     def get_next_chat(self, n: int = 1):
+        if self.is_lite:
+            return None
         next_record = self.__get_next_record(self.message.id, n)
         if next_record:
             next_chat = self.__make_chat(self, next_record)
@@ -300,6 +336,8 @@ class ChatContext:
             return None
 
     def get_previous_chat(self, n: int = 1):
+        if self.is_lite:
+            return None
         previous_record = self.__get_previous_record(self.message.id, n)
         if previous_record:
             previous_chat = self.__make_chat(self, previous_record)
@@ -419,4 +457,3 @@ class ErrorContext:
     func: t.Callable
     exception: Exception
     args: list[t.Any]
-

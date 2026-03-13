@@ -14,6 +14,9 @@ class IrisRequest:
     room: str
     sender: str
     raw: dict
+    is_lite: bool = False
+    is_group_chat: bool | None = None
+    profile_image: str = None
     
 class IrisAPI:
     def __init__(self, iris_endpoint: str):
@@ -30,7 +33,7 @@ class IrisAPI:
             raise Exception(f"Iris 오류: {data.get('message', '알 수 없는 오류')}")
 
         return data
-    
+
     # 추가됨 4
     def __ensure_list(self, files):
         if type(files) is not list:

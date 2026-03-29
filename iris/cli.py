@@ -18,7 +18,7 @@ except ImportError:
 
 
 # --- PyKV instance ---
-# PyKV is a singleton. It will use "iris.db" in the CWD by default.
+# PyKV is a singleton. By default it uses "databases/iris.db" from the CWD. # 추가됨 1
 kv = PyKV()
 
 # --- Content for irispy.py (to be created by 'init') ---
@@ -82,6 +82,15 @@ WantedBy=multi-user.target
 
 DEFAULT_SERVICE_NAME = "iris.service"
 
+
+# 추가됨 2
+def _get_db_display_path():
+    db_path = pathlib.Path(kv.filename)
+    if not db_path.is_absolute():
+        db_path = (pathlib.Path.cwd() / db_path).resolve()
+    return db_path
+# 추가끝 2
+
 def _get_service_name():
     """Reads the service name from .env or returns the default."""
     env_path = pathlib.Path.cwd() / ".env"
@@ -139,9 +148,11 @@ def _run_systemctl_command(action, service_name, use_sudo=True, capture_output=F
         return False
 
 def handle_init(args):
+    # 추가됨 3
     cwd = pathlib.Path.cwd()
     iris_py_path = cwd / "irispy.py"
-    db_filename = "iris.db" # PyKV default
+    db_filename = kv.filename  # PyKV default path
+    db_path = _get_db_display_path()
     env_path = cwd / ".env"
 
     # Create irispy.py
@@ -156,27 +167,26 @@ def handle_init(args):
             print(f"Error writing irispy.py: {e}", file=sys.stderr)
 
 
-    # Initialize iris.db and admin/ban lists
+    # Initialize databases/iris.db and admin/ban lists
     # PyKV's _get_db() will create the DB and table if not exists.
-    # We use the default filename "iris.db" which will be in CWD.
-    print(f"Ensuring '{db_filename}' exists and is initialized in {cwd}.")
+    print(f"Ensuring database exists and is initialized at {db_path}.")
 
     try:
         admins = kv.get("admin")
         if not isinstance(admins, list): # Covers False (not found) or wrong type
             kv.put("admin", [])
-            print("Initialized 'admin' list in iris.db.")
+            print(f"Initialized 'admin' list in {db_filename}.")
         else:
             print("'admin' list already exists or is initialized.")
 
         banned_users = kv.get("ban")
         if not isinstance(banned_users, list):
             kv.put("ban", [])
-            print("Initialized 'ban' list in iris.db.")
+            print(f"Initialized 'ban' list in {db_filename}.")
         else:
             print("'ban' list already exists or is initialized.")
     except Exception as e:
-         print(f"Error initializing iris.db: {e}", file=sys.stderr)
+         print(f"Error initializing {db_filename}: {e}", file=sys.stderr)
          print("DB operations might fail.", file=sys.stderr)
 
 
@@ -195,17 +205,19 @@ def handle_init(args):
              print(f"Error writing .env: {e}", file=sys.stderr)
 
     print("\nIris initialization complete.")
-    print(f"Project files ({iris_py_path.name}, {db_filename}, {env_path.name}) are in: {cwd}")
+    print(f"Project files ({iris_py_path.name}, {env_path.name}) are in: {cwd}")
+    print(f"Database file is at: {db_path}")
     print(f"Note: Ensure the 'iris' Python package (with Bot, ChatContext, IrisLink)")
     print(f"is installed in the Python environment used to run '{iris_py_path.name}'.")
     print(f"You may need to adjust '{iris_py_path.name}' for specific 'IrisLink' setup.")
+    # 추가끝 3
 
 
 def handle_kakaolink(args):
     config = {"app_key": args.app_key, "origin": args.origin}
     try:
         kv.put("kakaolink_config", config)
-        print(f"Kakaolink config stored in iris.db: app_key='{args.app_key}', origin='{args.origin}'")
+        print(f"Kakaolink config stored in {_get_db_display_path()}: app_key='{args.app_key}', origin='{args.origin}'") # 추가됨 4
     except Exception as e:
         print(f"Error storing Kakaolink config: {e}", file=sys.stderr)
 
@@ -440,7 +452,7 @@ def handle_service_status(args):
     # Status command output is usually what the user wants to see directly
     _run_systemctl_command("status", service_name, use_sudo=True, capture_output=True)
 
-# 추가됨 1
+# 추가됨 5
 def handle_melon_kakaolink(args):
     if args.melon_action == "on":
         try:
@@ -458,7 +470,7 @@ def handle_melon_kakaolink(args):
             print("melon_kakaolink has been deactivated")
         except Exception as e:
             print(f"Error deleting melon_kakaolink_config: {e}", file=sys.stderr)
-# 추가끝 1
+# 추가끝 5
 
 # --- Main Parser Setup ---
 
@@ -470,17 +482,17 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True, help="Top-level commands. Use <command> -h for more help.")
 
     # --- iris init ---
-    parser_init = subparsers.add_parser("init", help="Initialize an Iris project in the current directory (creates irispy.py, iris.db, .env).")
+    parser_init = subparsers.add_parser("init", help="Initialize an Iris project in the current directory (creates irispy.py, databases/iris.db, .env).") # 추가됨 6
     parser_init.add_argument("--force", action="store_true", help="Overwrite irispy.py and .env if they already exist.")
     parser_init.set_defaults(func=handle_init)
 
     # --- iris kakaolink ---
-    parser_kakaolink = subparsers.add_parser("kakaolink", help="Configure Kakaolink settings in iris.db.")
+    parser_kakaolink = subparsers.add_parser("kakaolink", help="Configure Kakaolink settings in databases/iris.db.") # 추가됨 7
     parser_kakaolink.add_argument("app_key", help="Your Kakaolink application key.")
     parser_kakaolink.add_argument("origin", help="Your Kakaolink service origin URL (e.g., https://example.com).")
     parser_kakaolink.set_defaults(func=handle_kakaolink)
 
-    # 추가됨 2
+    # 추가됨 8
     # --- iris melon_kakaolink ---
     parser_melon = subparsers.add_parser("melon_kakaolink", help="Enable or disable Melon KakaoLink.")
     melon_subparsers = parser_melon.add_subparsers(dest="melon_action", required=True, help="on: activated, off: deactivated")
@@ -488,10 +500,10 @@ def main():
     melon_on.set_defaults(func=handle_melon_kakaolink)
     melon_off = melon_subparsers.add_parser("off", help="melon_kakaolink has been deactivated.")
     melon_off.set_defaults(func=handle_melon_kakaolink)
-    # 추가끝 2
+    # 추가끝 8
 
     # --- iris admin ---
-    parser_admin = subparsers.add_parser("admin", help="Manage admin user IDs stored in iris.db.")
+    parser_admin = subparsers.add_parser("admin", help="Manage admin user IDs stored in databases/iris.db.") # 추가됨 9
     admin_subparsers = parser_admin.add_subparsers(dest="admin_action", required=True, help="Action for admin users.")
 
     admin_add = admin_subparsers.add_parser("add", help="Add a user to the admin list.")
@@ -506,7 +518,7 @@ def main():
     admin_list.set_defaults(func=handle_admin_commands)
 
     # --- iris ban ---
-    parser_ban = subparsers.add_parser("ban", help="Manage banned user IDs stored in iris.db.")
+    parser_ban = subparsers.add_parser("ban", help="Manage banned user IDs stored in databases/iris.db.") # 추가됨 10
     ban_subparsers = parser_ban.add_subparsers(dest="ban_action", required=True, help="Action for banned users.")
 
     ban_add = ban_subparsers.add_parser("add", help="Add a user to the ban list.")

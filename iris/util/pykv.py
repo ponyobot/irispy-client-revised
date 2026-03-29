@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import threading
+import os # 추가됨 1
 
 class PyKV:
     _instance = None
@@ -17,13 +18,18 @@ class PyKV:
 
     def __init__(self):
         if not self._initialized:
-            self.filename = "iris.db"
+            self.filename = os.path.join("databases", "iris.db") # 추가됨 2
             self._initialized = True
 
     def _get_db(self):
         if not hasattr(self._local, 'db') or self._local.db is None:
             if self.filename is None:
                  raise RuntimeError("Database filename not set. Call open() first.")
+            # 추가됨 3
+            db_dir = os.path.dirname(self.filename)
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
+            # 추가끝 3
             self._local.db = sqlite3.connect(self.filename, check_same_thread=False)
             cursor = self._local.db.cursor()
             cursor.execute("CREATE TABLE IF NOT EXISTS kv_pairs (key TEXT PRIMARY KEY, value TEXT)")

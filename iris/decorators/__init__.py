@@ -67,12 +67,12 @@ def is_manager(func):
         return func(*args, **kwargs) if manager_check(chat) else None
     return wrapper
 
-def admin_or_host_or_manager_check(chat: ChatContext):
+def staffr_check(chat: ChatContext):
     return admin_check(chat) or host_check(chat) or manager_check(chat)
 
-def is_admin_or_host_or_manager(func):
+def is_staff(func):
     def wrapper(*args, **kwargs):
         chat: ChatContext = args[0]
-        return func(*args, **kwargs) if admin_or_host_or_manager_check(chat) else None
+        return func(*args, **kwargs) if staffr_check(chat) else None
     return wrapper
 # 추가끝 1

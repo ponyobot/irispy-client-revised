@@ -195,7 +195,7 @@ SQLite를 사용하는 간단한 키-값 저장소입니다. 이 클래스는 �
 - `@is_not_banned`: 메시지를 보낸 사용자가 차단되지 않은 경우에만 함수를 실행합니다.
 - `@is_host`: 메시지를 보낸 사용자의 타입이 HOST인 경우에만 함수를 실행합니다.
 - `@is_manager`: 메시지를 보낸 사용자의 타입이 MANAGER인 경우에만 함수를 실행합니다.
-- `@is_admin_or_host_or_manager`: 메시지를 보낸 사용자가 관리자이거나, 사용자 타입이 HOST 또는 MANAGER인 경우 함수를 실행합니다. 여러 역할을 동시에 가진 경우에도 허용됩니다.
+- `@is_staff`: 메시지를 보낸 사용자가 관리자이거나, 사용자 타입이 HOST 또는 MANAGER인 경우 함수를 실행합니다. 여러 역할을 동시에 가진 경우에도 허용됩니다.
 
 ## Special Thanks
 - Irispy2 and Kakaolink by @ye-seola

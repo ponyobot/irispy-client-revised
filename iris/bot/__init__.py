@@ -35,14 +35,14 @@ class Bot:
         self.iris_ws_endpoint = f"ws://{self.iris_url}/ws"
         self.api = IrisAPI(f"http://{self.iris_url}")
 
-    def __process_chat(self, chat: ChatContext):
+    def __process_chat(self, chat: ChatContext): 
         self.emitter.emit("chat", [chat])
         if chat.is_lite:
             self.emitter.emit("message", [chat])
             return
 
         origin = chat.message.v.get("origin")
-        if origin == "MSG":
+        if origin == "MSG" or origin == "WRITE": # 추가됨 1
             self.emitter.emit("message", [chat])
         elif origin == "NEWMEM":
             self.emitter.emit("new_member", [chat])

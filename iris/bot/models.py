@@ -88,12 +88,16 @@ class User:
         if self.is_lite:
             return self._name
         try:
+            #추가됨 1
+            if self.id == self._bot_id:
+                query = "SELECT T2.nickname FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
+                results = self._api.query(query, [self._chat_id])
+                if results and results[0].get("nickname"):
+                    return results[0].get("nickname")
+                return self._name
+            #추가끝 1
             if not self._name:
-                if self.id == self._bot_id:
-                    query = "SELECT T2.nickname FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
-                    results = self._api.query(query, [self._chat_id])
-                    name = results[0].get("nickname")
-                elif self.id < 10000000000:
+                if self.id < 10000000000:
                     query = "SELECT name, enc FROM db2.friends WHERE id = ?"
                     results = self._api.query(query, [self.id])
                     name = results[0].get("name")
@@ -280,7 +284,7 @@ class ChatContext:
         
         self.api.reply_media(room_id, files, thread_id=thread_id)
     
-    # 추가됨 1
+    # 추가됨 2
     def reply_audio(
         self,
         files: t.List[BufferedIOBase | bytes | str],
@@ -313,7 +317,7 @@ class ChatContext:
             room_id = self.room.id
 
         self.api.reply_file(room_id, files, thread_id=thread_id)
-    # 추가끝 1
+    # 추가끝 2
 
     def get_source(self):
         if self.is_lite:

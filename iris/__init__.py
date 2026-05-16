@@ -1,4 +1,4 @@
-__version__ = "0.0.5"
+__version__ = "0.0.6"
 
 from iris.bot import Bot
 from iris.bot.models import ChatContext, Message, Room, User

@@ -449,8 +449,8 @@ class ChatContext:
         return new_chat
     
     def __get_name_of_user_id(self, user_id: int):
-        query = "WITH info AS (SELECT ? AS user_id) SELECT COALESCE(open_chat_member.nickname, friends.name) AS name, COALESCE(open_chat_member.enc, friends.enc) AS enc FROM info LEFT JOIN db2.open_chat_member ON open_chat_member.user_id = info.user_id LEFT JOIN db2.friends ON friends.id = info.user_id;"
-        result = self.api.query(query,[user_id])
+        query = "SELECT nickname AS name, enc FROM db2.open_chat_member WHERE user_id = ?"
+        result = self.api.query(query, [user_id])
         if len(result) == 0:
             return None
         return result[0]['name']

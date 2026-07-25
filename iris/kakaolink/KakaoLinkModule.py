@@ -12,7 +12,7 @@ import requests
 
 logger = logging.getLogger("KakaoLink")
 
-KAKAOTALK_VERSION = "26.4.2"
+KAKAOTALK_VERSION = "25.2.1"
 ANDROID_SDK_VER = 33
 ANDROID_WEBVIEW_UA = "Mozilla/5.0 (Linux; Android 13; SM-G998B Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/114.0.5735.60 Mobile Safari/537.36"
 
@@ -264,9 +264,20 @@ class KakaoLink:
         self._cookie_storage.clear()
         client.cookies.clear()
 
+        authorized = await self._check_authorized(client)
+        if authorized:
+            return
+
         tgt_token = await self._get_tgt_token(client, authorization)
         await self._submit_tgt_token(client, tgt_token)
 
+        authorized = await self._check_authorized(client)
+        if not authorized:
+            logger.error(
+                "카카오링크 로그인: 알 수 없는 이유로 로그인이 되지 않았습니다 (%s)",
+                stack_info=True,
+            )
+        
         self._cookies = dict(client.cookies)
         await self._cookie_storage.save(self._cookies)
 
@@ -367,6 +378,23 @@ class KakaoLink:
                 "카카오링크 추가인증: 알 수 없는 오류 (%s)", status, exc_info=True
             )
             raise KakaoLink2FAExcepetion()
+
+    async def _check_authorized(self, client: httpx.AsyncClient):
+        res = await client.get(
+            "https://e.kakao.com/api/v1/users/me",
+            headers={
+                **self._get_web_headers(),
+                "referer": "https://e.kakao.com/",
+            },
+        )
+
+        res_json: dict = res.json()
+        result: dict = res_json.get("result", {})
+        
+        if result.get("status") == "VALID":
+            return True
+        else:
+            return False
 
     async def _submit_tgt_token(self, client: httpx.AsyncClient, tgt_token: str):
         res = await client.get(

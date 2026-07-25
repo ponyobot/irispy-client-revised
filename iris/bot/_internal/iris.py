@@ -170,6 +170,15 @@ class IrisAPI:
         )
         return self.__parse(res)
 
+    # 추가됨 5
+    def reply_markdown(self, room_id: int, msg: str):
+        res = requests.post(
+            f"{self.iris_endpoint}/reply/markdown",
+            json={"room": str(room_id), "data": str(msg)},
+        )
+        return self.__parse(res)
+    # 추가끝 5
+
     def reply_media(
         self,
         room_id: int,
@@ -223,31 +232,7 @@ class IrisAPI:
         else:
             print("이미지 전송이 모두 실패하였습니다. 이미지 전송 요청 부분을 확인해주세요.")
 
-    def decrypt(self, enc: int, b64_ciphertext: str, user_id: int) -> str | None:
-        res = requests.post(
-            f"{self.iris_endpoint}/decrypt",
-            json={"enc": enc, "b64_ciphertext": b64_ciphertext, "user_id": user_id},
-        )
-
-        res = self.__parse(res)
-        return res.get("plain_text")
-
-    def query(self, query: str, bind: list[t.Any] | None = None) -> list[dict]:
-        res = requests.post(
-            f"{self.iris_endpoint}/query", json={"query": query, "bind": bind or []}
-        )
-        res = self.__parse(res)
-        return res.get("data", [])
-
-    def get_info(self):
-        res = requests.get(f"{self.iris_endpoint}/config")
-        return self.__parse(res)
-
-    def get_aot(self):
-        res = requests.get(f"{self.iris_endpoint}/aot")
-        return self.__parse(res)
-
-    # 추가됨 5
+    # 추가됨 6
     def reply_audio(
         self,
         room_id: int,
@@ -296,4 +281,28 @@ class IrisAPI:
             default_extension="bin",
             thread_id=thread_id,
         )
-    # 추가끝 5
+    # 추가끝 6
+
+    def decrypt(self, enc: int, b64_ciphertext: str, user_id: int) -> str | None:
+        res = requests.post(
+            f"{self.iris_endpoint}/decrypt",
+            json={"enc": enc, "b64_ciphertext": b64_ciphertext, "user_id": user_id},
+        )
+
+        res = self.__parse(res)
+        return res.get("plain_text")
+
+    def query(self, query: str, bind: list[t.Any] | None = None) -> list[dict]:
+        res = requests.post(
+            f"{self.iris_endpoint}/query", json={"query": query, "bind": bind or []}
+        )
+        res = self.__parse(res)
+        return res.get("data", [])
+
+    def get_info(self):
+        res = requests.get(f"{self.iris_endpoint}/config")
+        return self.__parse(res)
+
+    def get_aot(self):
+        res = requests.get(f"{self.iris_endpoint}/aot")
+        return self.__parse(res)

@@ -109,6 +109,7 @@ Bot(iris_url: str, *, max_workers: int = None)
 **메서드:**
 
 - `reply(message: str, room_id: int = None)`: 채팅방에 답장을 보냅니다.
+- `reply_markdown(message: str, room_id: int = None)`: 채팅방의 마크다운 메시지를 보냅니다.
 - `reply_media(files: list, room_id: int = None)`: 채팅방에 미디어 파일을 보냅니다.
 - `get_source()`: 답장하는 메시지의 `ChatContext`를 반환합니다.
 - `get_next_chat(n: int = 1)`: 채팅 기록에서 다음 메시지의 `ChatContext`를 반환합니다.

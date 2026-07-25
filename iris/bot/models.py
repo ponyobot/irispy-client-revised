@@ -88,23 +88,23 @@ class User:
         if self.is_lite:
             return self._name
         try:
-            #추가됨 1
+            # 추가됨 1
             if self.id == self._bot_id:
                 query = "SELECT T2.nickname FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
                 results = self._api.query(query, [self._chat_id])
                 if results and results[0].get("nickname"):
                     return results[0].get("nickname")
                 return self._name
-            #추가끝 1
+            # 추가끝 1
             if not self._name:
-                if self.id < 10000000000:
-                    query = "SELECT name, enc FROM db2.friends WHERE id = ?"
-                    results = self._api.query(query, [self.id])
-                    name = results[0].get("name")
+                if self.id == self._bot_id:
+                    query = "SELECT T2.nickname FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
+                    results = self._api.query(query, [self._chat_id])
+                    name = results[0].get("nickname")
                 else:
                     query = "SELECT nickname,enc FROM db2.open_chat_member WHERE user_id = ?"
                     results = self._api.query(query, [self.id])
-                    name = results[0].get("nickname")
+                    name = results[0].get("nickname") if results else None
                 return name
             
             else:
@@ -272,7 +272,16 @@ class ChatContext:
             self.api.reply(room_id, message, thread_id=thread_id)
         except Exception as e:
             print(f"reply 오류: {e}")
+    # 추가됨 2
+    def reply_markdown(self, message: str, room_id: int = None):
+        if room_id is None:
+            room_id = self.room.id
 
+        try:
+            return self.api.reply_markdown(room_id, message)
+        except Exception as e:
+            print(f"reply_markdown 오류: {e}")
+    # 추가끝 2
     def reply_media(
         self,
         files: t.List[BufferedIOBase | bytes | Image.Image | str],
@@ -283,8 +292,8 @@ class ChatContext:
             room_id = self.room.id
         
         self.api.reply_media(room_id, files, thread_id=thread_id)
-    
-    # 추가됨 2
+
+    # 추가됨 3
     def reply_audio(
         self,
         files: t.List[BufferedIOBase | bytes | str],
@@ -317,7 +326,7 @@ class ChatContext:
             room_id = self.room.id
 
         self.api.reply_file(room_id, files, thread_id=thread_id)
-    # 추가끝 2
+    # 추가끝 3
 
     def get_source(self):
         if self.is_lite:
@@ -449,11 +458,14 @@ class ChatContext:
         return new_chat
     
     def __get_name_of_user_id(self, user_id: int):
-        query = "SELECT nickname AS name, enc FROM db2.open_chat_member WHERE user_id = ?"
-        result = self.api.query(query, [user_id])
-        if len(result) == 0:
-            return None
-        return result[0]['name']
+        if user_id == self._bot_id:
+            query = "SELECT T2.nickname FROM chat_rooms AS T1 JOIN db2.open_profile AS T2 ON T1.link_id = T2.link_id WHERE T1.id = ?"
+            results = self.api.query(query, [self.room.id])
+        else:
+            query = "SELECT nickname,enc FROM db2.open_chat_member WHERE user_id = ?"
+            results = self.api.query(query, [user_id])
+            return results[0]['nickname'] if results else None
+        return results[0]['nickname'] if results else None
 
 @dataclass
 class ErrorContext:

@@ -547,8 +547,8 @@ def main():
     service_stop_parser = service_subparsers.add_parser("stop", help="Stop the iris systemd service (requires sudo).")
     service_stop_parser.set_defaults(func=handle_service_stop)
     
-    service_stop_parser = service_subparsers.add_parser("restart", help="Restart the iris systemd service (requires sudo).")
-    service_stop_parser.set_defaults(func=handle_service_restart)
+    service_restart_parser = service_subparsers.add_parser("restart", help="Restart the iris systemd service (requires sudo).")
+    service_restart_parser.set_defaults(func=handle_service_restart)
 
     service_status_parser = service_subparsers.add_parser("status", help="Show the status of the iris systemd service (requires sudo).")
     service_status_parser.set_defaults(func=handle_service_status)
